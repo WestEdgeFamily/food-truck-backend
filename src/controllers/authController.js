@@ -103,7 +103,7 @@ const loginUser = async (req, res) => {
         // Find user and include role
         const user = await User.findOne({ email }).select('+password');
         
-        if (user && (await user.matchPassword(password))) {
+        if (user && (await user.comparePassword(password))) {
             const token = generateToken(user);
             res.json({
                 _id: user._id,
@@ -125,4 +125,4 @@ module.exports = {
     registerOwner,
     registerUser,
     loginUser
-}; 
+};
