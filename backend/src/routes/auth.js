@@ -4,6 +4,7 @@ const { registerOwner, registerUser, loginUser } = require('../controllers/authC
 const { protect, isOwner, isCustomer } = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { auth } = require('../middleware/auth');
 
 // Public routes
 router.post('/register/owner', registerOwner);
@@ -43,150 +44,164 @@ router.put('/preferences', protect, async (req, res) => {
     }
 });
 
-// @route   POST /api/auth/register-customer
-// @desc    Register a new customer
-// @access  Public
+// Register a new user (customer)
 router.post('/register-customer', async (req, res) => {
   try {
-    const { name, email, password, phone, preferences } = req.body;
+    const { name, email, password, phone } = req.body;
 
-    // Validation
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
-    }
-
-    // Check if user exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create customer user
+    // Create new user
     const user = new User({
       name,
       email,
       password,
       phone,
-      role: 'customer',
-      preferences: {
-        notifications: {
-          pushEnabled: true,
-          emailEnabled: true,
-          favoriteUpdates: true,
-          nearbyTrucks: true,
-          ...preferences?.notifications
-        },
-        location: {
-          shareLocation: true,
-          defaultRadius: 15,
-          autoDetectLocation: true,
-          ...preferences?.location
-        },
-        display: {
-          theme: 'auto',
-          language: 'en',
-          showDistance: true,
-          showPrices: true,
-          ...preferences?.display
-        }
-      }
+      role: 'customer'
     });
 
     await user.save();
 
-    // Generate JWT token
+    // Generate token
     const token = jwt.sign(
-      { 
-        userId: user._id, 
-        role: user.role,
-        email: user.email 
-      }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '30d' }
+      { _id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     res.status(201).json({
-      message: 'Customer registered successfully',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        preferences: user.preferences
-      }
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      preferences: user.preferences
     });
-
   } catch (error) {
-    console.error('Customer registration error:', error);
-    res.status(500).json({ message: 'Error registering customer', error: error.message });
+    res.status(500).json({ message: 'Error creating user' });
   }
 });
 
-// @route   POST /api/auth/login-customer
-// @desc    Customer login
-// @access  Public
+// Register a new food truck owner
+router.post('/register-owner', async (req, res) => {
+  try {
+    const { name, email, password, phone, businessName } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create new user
+    const user = new User({
+      name,
+      email,
+      password,
+      phone,
+      businessName,
+      role: 'owner'
+    });
+
+    await user.save();
+
+    // Generate token
+    const token = jwt.sign(
+      { _id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      token,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      businessName: user.businessName,
+      preferences: user.preferences
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating user' });
+  }
+});
+
+// Login user
 router.post('/login-customer', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
-    // Find customer user
-    const user = await User.findOne({ email, role: 'customer' });
+    // Find user
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Update last login
-    await user.updateLastLogin();
-
-    // Generate JWT token
+    // Generate token
     const token = jwt.sign(
-      { 
-        userId: user._id, 
-        role: user.role,
-        email: user.email 
-      }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '30d' }
+      { _id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     res.json({
-      message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        preferences: user.preferences,
-        favorites: user.favorites,
-        activity: {
-          totalVisits: user.activity.totalVisits,
-          lastLogin: user.activity.lastLogin
-        }
-      }
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      preferences: user.preferences
     });
-
   } catch (error) {
-    console.error('Customer login error:', error);
-    res.status(500).json({ message: 'Error logging in', error: error.message });
+    res.status(500).json({ message: 'Error logging in' });
+  }
+});
+
+// Login owner
+router.post('/login-owner', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email, role: 'owner' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Generate token
+    const token = jwt.sign(
+      { _id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      businessName: user.businessName,
+      preferences: user.preferences
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error logging in' });
   }
 });
 

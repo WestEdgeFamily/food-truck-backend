@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.westedgefamily.foodtruckfinder"
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace "com.example.food_truck_tracker"
+    compileSdkVersion 35
     defaultConfig {
-        applicationId "com.westedgefamily.foodtruckfinder"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        applicationId "com.example.food_truck_tracker"
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

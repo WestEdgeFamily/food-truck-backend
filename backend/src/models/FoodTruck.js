@@ -55,10 +55,10 @@ const foodTruckSchema = new mongoose.Schema({
             default: 'medium'
         },
         notes: String,
-        // GPS tracking fields (commented out for future use)
-        // gpsDeviceId: String,
-        // gpsLastUpdate: Date,
-        // gpsAccuracy: Number
+        // GPS tracking fields
+        gpsAccuracy: Number,
+        heading: Number, // Direction of movement in degrees
+        speed: Number   // Speed in m/s
     },
     // Social media integration
     socialMedia: {
@@ -154,19 +154,24 @@ const foodTruckSchema = new mongoose.Schema({
             type: Boolean,
             default: false
         },
-        // GPS tracking preferences (commented out for future use)
-        // enableGpsTracking: {
-        //     type: Boolean,
-        //     default: false
-        // },
-        // gpsUpdateFrequency: {
-        //     type: Number,
-        //     default: 60 // seconds
-        // },
-        // businessHoursOnly: {
-        //     type: Boolean,
-        //     default: true
-        // }
+        // GPS tracking preferences
+        enableGpsTracking: {
+            type: Boolean,
+            default: false
+        },
+        gpsUpdateFrequency: {
+            type: Number,
+            default: 30 // seconds
+        },
+        trackingAccuracy: {
+            type: String,
+            enum: ['high', 'medium', 'low'],
+            default: 'medium'
+        },
+        shareLocationWhileOpen: {
+            type: Boolean,
+            default: true
+        }
     },
     rating: {
         type: Number,
@@ -203,6 +208,17 @@ const foodTruckSchema = new mongoose.Schema({
     images: [{
         type: String
     }],
+    // Live GPS tracking session
+    trackingSession: {
+        isActive: {
+            type: Boolean,
+            default: false
+        },
+        sessionId: String,
+        startTime: Date,
+        endTime: Date,
+        lastUpdate: Date
+    },
     menu: [{
         name: {
             type: String,

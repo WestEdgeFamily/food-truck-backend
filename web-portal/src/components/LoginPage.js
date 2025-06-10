@@ -31,10 +31,9 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await axios.post(`${API_CONFIG.BASE_URL}/api/auth/login`, {
+      const response = await axios.post(`${API_CONFIG.BASE_URL}/api/auth/login-customer`, {
         email,
-        password,
-        role: isOwner ? 'owner' : 'customer'
+        password
       });
 
       const { token, role, _id, name, businessName, preferences } = response.data;

@@ -11,26 +11,30 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    lowercase: true,
-    trim: true
+    trim: true,
+    lowercase: true
   },
   password: {
     type: String,
     required: true,
     minlength: 6
   },
+  phone: {
+    type: String,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['customer', 'owner', 'admin'],
     default: 'customer'
   },
+  businessName: {
+    type: String,
+    trim: true
+  },
   avatar: {
     type: String,
     default: null
-  },
-  phone: {
-    type: String,
-    trim: true
   },
   
   // Customer Profile Features
@@ -56,22 +60,10 @@ const userSchema = new mongoose.Schema({
   },
 
   // Favorites System
-  favorites: {
-    foodTrucks: [{
-      truckId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FoodTruck'
-      },
-      addedDate: {
-        type: Date,
-        default: Date.now
-      },
-      notes: String
-    }],
-    cuisineTypes: [{
-      type: String
-    }]
-  },
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Truck'
+  }],
 
   // User Preferences & Settings
   preferences: {
@@ -91,14 +83,6 @@ const userSchema = new mongoose.Schema({
       nearbyTrucks: {
         type: Boolean,
         default: true
-      },
-      newTrucks: {
-        type: Boolean,
-        default: false
-      },
-      promotions: {
-        type: Boolean,
-        default: true
       }
     },
     location: {
@@ -108,7 +92,7 @@ const userSchema = new mongoose.Schema({
       },
       defaultRadius: {
         type: Number,
-        default: 15 // miles
+        default: 15
       },
       autoDetectLocation: {
         type: Boolean,
@@ -190,6 +174,15 @@ const userSchema = new mongoose.Schema({
       id: String,
       email: String
     }
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
@@ -213,48 +206,21 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Compare password method
+// Method to compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Get user's favorite truck IDs
+// Method to get favorite truck IDs
 userSchema.methods.getFavoriteTruckIds = function() {
-  return this.favorites.foodTrucks.map(fav => fav.truckId);
+  return this.favorites.map(favorite => favorite.toString());
 };
 
-// Add truck to favorites
-userSchema.methods.addFavorite = function(truckId, notes = '') {
-  const existingFav = this.favorites.foodTrucks.find(
-    fav => fav.truckId.toString() === truckId.toString()
-  );
-  
-  if (!existingFav) {
-    this.favorites.foodTrucks.push({
-      truckId,
-      notes,
-      addedDate: new Date()
-    });
-  }
-  
-  return this.save();
-};
-
-// Remove truck from favorites
-userSchema.methods.removeFavorite = function(truckId) {
-  this.favorites.foodTrucks = this.favorites.foodTrucks.filter(
-    fav => fav.truckId.toString() !== truckId.toString()
-  );
-  
-  return this.save();
-};
-
-// Update last login
-userSchema.methods.updateLastLogin = function() {
-  this.activity.lastLogin = new Date();
-  this.activity.totalVisits += 1;
-  return this.save();
-};
+// Update timestamp on save
+userSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
 const User = mongoose.model('User', userSchema);
 

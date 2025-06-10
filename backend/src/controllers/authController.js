@@ -18,7 +18,7 @@ const generateToken = (user) => {
 };
 
 // @desc    Register a new food truck owner
-// @route   POST /api/auth/register/owner
+// @route   POST /api/auth/register
 // @access  Public
 const registerOwner = async (req, res) => {
     try {
@@ -36,7 +36,8 @@ const registerOwner = async (req, res) => {
             password,
             businessName,
             phoneNumber,
-            role: 'owner'
+            role: 'owner',
+            name: businessName // Use businessName as name for owners
         });
 
         if (user) {
@@ -65,12 +66,12 @@ const registerOwner = async (req, res) => {
     }
 };
 
-// @desc    Register a new customer
-// @route   POST /api/auth/register/customer
+// @desc    Register a new customer user
+// @route   POST /api/auth/register-user
 // @access  Public
 const registerUser = async (req, res) => {
     try {
-        const { email, password, name, phoneNumber, preferences } = req.body;
+        const { email, password, name, phoneNumber } = req.body;
 
         // Check if user exists
         const userExists = await User.findOne({ email });
@@ -84,29 +85,7 @@ const registerUser = async (req, res) => {
             password,
             name,
             phoneNumber,
-            role: 'customer',
-            preferences: {
-                notifications: {
-                    pushEnabled: true,
-                    emailEnabled: true,
-                    favoriteUpdates: true,
-                    nearbyTrucks: true,
-                    ...preferences?.notifications
-                },
-                location: {
-                    shareLocation: true,
-                    defaultRadius: 15,
-                    autoDetectLocation: true,
-                    ...preferences?.location
-                },
-                display: {
-                    theme: 'auto',
-                    language: 'en',
-                    showDistance: true,
-                    showPrices: true,
-                    ...preferences?.display
-                }
-            }
+            role: 'customer'
         });
 
         if (user) {
@@ -116,7 +95,6 @@ const registerUser = async (req, res) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
-                preferences: user.preferences,
                 token
             });
         }
@@ -126,44 +104,31 @@ const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Login user (both customer and owner)
+// @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+
+        // Find user and include role
+        const user = await User.findOne({ email }).select('+password');
         
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
-
-        // Update last login
-        await user.updateLastLogin();
-
-        const token = jwt.sign(
-            { userId: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
-
-        res.json({
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
+        if (user && (await user.comparePassword(password))) {
+            const token = generateToken(user);
+            res.json({
+                _id: user._id,
                 email: user.email,
-                role: user.role
-            }
-        });
+                name: user.name || user.businessName,
+                role: user.role,
+                token
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid email or password' });
+        }
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ message: 'Error logging in' });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
