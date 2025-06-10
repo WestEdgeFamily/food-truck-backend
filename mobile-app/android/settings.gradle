@@ -1,0 +1,14 @@
+pluginManagement {
+    def flutterSdkPath = 'D:\\src\\flutter'
+    settings.ext.flutterSdkPath = flutterSdkPath
+
+    includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+include ':app' 

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "751216537458",
+    "project_id": "food-truck-finder-88a80",
+    "storage_bucket": "food-truck-finder-88a80.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:751216537458:android:731da7707ddb977c6b37eb",
+        "android_client_info": {
+          "package_name": "com.example.food_truck_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByoPLUIH4B2xSog8KSilv7FRCCBp2dlfM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
